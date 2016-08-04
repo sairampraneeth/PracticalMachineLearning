@@ -224,7 +224,31 @@ print(rfaccuracy)</code></pre>
 ## Detection Rate         0.2842   0.1925   0.1738   0.1631   0.1838
 ## Detection Prevalence   0.2847   0.1930   0.1749   0.1631   0.1843
 ## Balanced Accuracy      0.9992   0.9970   0.9979   0.9977   0.9997</code></pre>
-<p>The model accuracy is 99.75% and the out of sample error is 0.25% so the Model is reliable for prediction.</p>
+<p>The model accuracy is 99.75% and the out of sample error is 0.25% for this combination of Training and Validation data sets.</p>
+</div>
+<div id="estimating-the-out-of-sample-error-for-the-random-forests-method" class="section level1">
+<h1>ESTIMATING THE OUT OF SAMPLE ERROR FOR THE RANDOM FORESTS METHOD</h1>
+<p>Using 5-Fold Cross Validation, we will try to estimate the Out of Sample error on this Data for Random Forests.</p>
+<pre class="r"><code>set.seed(1000)
+foldset &lt;- createFolds(y = Train$classe,k = 5,returnTrain = TRUE)
+trainfold &lt;- list()
+validfold &lt;- list()
+errors &lt;- c()
+for(i in 1:5){trainfold[[i]] &lt;- Train[foldset[[i]],]}
+for(i in 1:5){validfold[[i]] &lt;- Train[-foldset[[i]],]}
+
+for(i in 1:5){
+  set.seed(i * 123)
+  modfit &lt;- randomForest(classe ~ .,data = trainfold[[i]],ntrees = 5)
+  prediction &lt;- predict(modfit,validfold[[i]])
+  errors &lt;- c(errors,1 - confusionMatrix(prediction,validfold[[i]]$classe)$overall[&quot;Accuracy&quot;])
+}
+
+MeanError &lt;- sqrt((mean(errors ^ 2)))
+
+print(MeanError)</code></pre>
+<pre><code>## [1] 0.003945926</code></pre>
+<p>The RMSE value of the out of sample errors is 0.003945926. As we can see, Random Forest Method is a reliable model for predicting the Test Data since the Sample Error is very low.</p>
 </div>
 <div id="testing-the-model-with-the-test-set" class="section level1">
 <h1>TESTING THE MODEL WITH THE TEST SET</h1>

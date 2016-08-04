@@ -88,7 +88,34 @@ rfaccuracy <- confusionMatrix(vpred,validationset$classe)
 print(rfaccuracy)
 ```
 
-The model accuracy is 99.75% and the out of sample error is 0.25% so the Model is reliable for prediction.
+The model accuracy is 99.75% and the out of sample error is 0.25% for this combination of Training and Validation data sets.
+
+# ESTIMATING THE OUT OF SAMPLE ERROR FOR THE RANDOM FORESTS METHOD
+
+Using 5-Fold Cross Validation, we will try to estimate the Out of Sample error on this Data for Random Forests.
+
+```{r}
+set.seed(1000)
+foldset <- createFolds(y = Train$classe,k = 5,returnTrain = TRUE)
+trainfold <- list()
+validfold <- list()
+errors <- c()
+for(i in 1:5){trainfold[[i]] <- Train[foldset[[i]],]}
+for(i in 1:5){validfold[[i]] <- Train[-foldset[[i]],]}
+
+for(i in 1:5){
+  set.seed(i * 123)
+  modfit <- randomForest(classe ~ .,data = trainfold[[i]],ntrees = 5)
+  prediction <- predict(modfit,validfold[[i]])
+  errors <- c(errors,1 - confusionMatrix(prediction,validfold[[i]]$classe)$overall["Accuracy"])
+}
+
+MeanError <- sqrt((mean(errors ^ 2)))
+
+print(MeanError)
+```
+
+The RMSE value of the out of sample errors is 0.003945926. As we can see, Random Forest Method is a reliable model for predicting the Test Data since the Sample Error is very low.
 
 # TESTING THE MODEL WITH THE TEST SET
 
