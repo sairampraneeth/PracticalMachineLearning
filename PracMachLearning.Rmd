@@ -1,0 +1,103 @@
+---
+title: "Practical Machine Learning Project"
+author: "Vegesana Sairam Praneeth"
+date: "August 3, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# INTRODUCTION
+
+In the following report, we will fit a prediction model to the data obtained from fitness monitors. The Data contains the performance values of participants who were made to perform a set of training exercises correctly and incorrectly. Subsequently, each row contains certain performance values obtained from the monitors automatically as well as a 'classe' variable which is a rating of the the corresponding row given manually by fitness trainers observing. Our goal is to fit the training data to a suitable model and then try to predict 20 test cases where performance values are given and we are to predict the final 'classe' value which is the rating.
+
+# PRE-REQUISITES
+
+For this modelling project we first download the required datasets to be used for building and testing our models.
+
+```{r}
+# Training Data Set
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "train.csv",method = "curl")
+
+# Testing Data Set
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "test.csv",method = "curl")
+
+# Required Libraries
+suppressWarnings(library(caret))
+suppressWarnings(library(randomForest))
+```
+
+# LOADING AND CLEANING THE DATA SETS
+
+Next we Load both the training and testing data sets. After this we clean the Training dataset to ensure that columns which contain only descriptive values, columns with near zero variance and columns with high number of missing values are removed since they can produce high prediction errors.
+
+```{r}
+Train <- read.csv("train.csv")
+Test <- read.csv("test.csv")
+
+# columns with near zero variance.
+exec1 <- nearZeroVar(Train)
+Train <- Train[,-exec1]
+
+# columns which are used only for data description and don't play a part in prediction.
+exec2 <- c("X","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window","num_window")
+
+Train <- Train[,!names(Train) %in% exec2]
+
+# Count NA values in remaining columns.
+nacount <- sapply(Train, function(x){ sum(is.na(x) | x == "")})
+
+exec3 <- names(nacount[nacount < 0.4 * length(Train$classe)])
+
+Train <- Train[,names(Train) %in% exec3]
+```
+
+# MODEL BUILDING
+
+For building the model, We will fit the Training data set to a random forest model and then test it against the validation data set. The ratio of training to validation is 80-20.
+
+```{r}
+# We separate the Training data into fitting and validation data in the ratio of 80-20.
+set.seed(999)
+inTrain <- createDataPartition(y = Train$classe,p = 0.8,list = FALSE)
+trainset <- Train[inTrain,]
+validationset <- Train[-inTrain,]
+```
+
+Next we fit the random forest to the training data set.
+
+```{r}
+# Model Fitting
+set.seed(555)
+rf <- randomForest(classe ~ .,data = trainset,ntrees = 5)
+```
+
+# TESTING THE MODELS ON THE VALIDATION SET
+
+Next we compare the performance of the random forest against the Validation set.
+
+```{r}
+vpred <- predict(rf,validationset)
+
+# Accuracy and out of sample error for the Model against the validation set
+
+rfaccuracy <- confusionMatrix(vpred,validationset$classe)
+
+print(rfaccuracy)
+```
+
+The model accuracy is 99.75% and the out of sample error is 0.25% so the Model is reliable for prediction.
+
+# TESTING THE MODEL WITH THE TEST SET
+
+Now we shall Test the Model against the test set.
+
+```{r}
+# Prediction of the Final Model against the Test Set
+
+fpred <- predict(rf,Test)
+
+print(fpred)
+```
